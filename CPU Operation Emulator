@@ -1,0 +1,1013 @@
+
+
+
+
+class CPU:
+
+   
+
+
+    def __init__(self):
+
+        
+
+        self.registers = {
+            "R0": 0,
+            "R1": 0,
+            "R2": 0,
+            "R3": 0,
+            "R4": 0,
+            "R5": 0,
+            "R6": 0,
+            "R7": 0
+        }
+
+
+
+        self.memory = [0] * 256
+
+
+        self.PC = 0
+
+
+        self.IR = None
+
+
+       
+        self.decoded_instruction = None
+
+        self.execution_result = None
+
+        self.memory_result = None
+
+
+        self.running = True
+
+
+       
+        self.cycles = 0
+
+
+        self.program = []
+
+
+
+   
+    def validate_register(self, register):
+
+        
+
+
+        if register in self.registers:
+
+            return True
+
+        else:
+
+            return False
+
+
+
+    def validate_memory(self, address):
+
+       
+
+
+        if isinstance(address, int):
+
+            if 0 <= address < len(self.memory):
+
+                return True
+
+
+        return False
+
+
+
+    def display_registers(self):
+
+       
+
+
+        print("\n========== REGISTER STATUS ==========")
+
+
+        for reg, value in self.registers.items():
+
+            print(f"{reg} : {value}")
+
+
+        print("====================================")
+
+
+
+    def display_memory(self):
+
+       
+
+
+        print("\n========== MEMORY STATUS ==========")
+
+
+        for index, value in enumerate(self.memory):
+
+            if value != 0:
+
+                print(f"Address {index} : {value}")
+
+
+        print("==================================")
+
+
+
+    
+    def load_program(self, instructions):
+
+        
+
+
+        self.program = instructions
+
+        self.PC = 0
+
+
+        print("\nProgram Loaded Successfully!")
+
+
+
+
+    def show_program(self):
+
+       
+
+        print("\n========== PROGRAM ==========")
+
+
+        for index, instruction in enumerate(self.program):
+
+            print(index, ":", instruction)
+
+
+        print("=============================")    
+    def fetch(self):
+
+        
+
+
+        if self.PC < len(self.program):
+
+            self.IR = self.program[self.PC]
+
+
+            print("\nFETCH STAGE")
+            print("----------------")
+            print("Instruction Fetched:", self.IR)
+
+
+            
+
+            self.PC += 1
+
+
+        else:
+
+            self.IR = None
+
+            self.running = False
+
+
+
+    def decode(self):
+
+        
+
+
+        if self.IR is not None:
+
+
+            parts = self.IR.split()
+
+
+            opcode = parts[0].upper()
+
+
+            operands = parts[1:]
+
+
+            self.decoded_instruction = {
+
+                "opcode": opcode,
+
+                "operands": operands
+
+            }
+
+
+            print("\nDECODE STAGE")
+            print("----------------")
+
+            print("Opcode:",
+                  opcode)
+
+            print("Operands:",
+                  operands)
+
+
+
+    def validate_instruction(self):
+
+      
+
+
+        valid_operations = [
+
+            "LOAD",
+            "STORE",
+            "ADD",
+            "SUB",
+            "MOV",
+            "JMP",
+            "HALT"
+
+        ]
+
+
+        if self.decoded_instruction is None:
+
+            return False
+
+
+
+        opcode = self.decoded_instruction["opcode"]
+
+
+        if opcode in valid_operations:
+
+            return True
+
+
+        else:
+
+            print("Invalid Instruction:",
+                  opcode)
+
+            return False
+
+
+
+
+    def validate_operands(self):
+
+       
+        opcode = self.decoded_instruction["opcode"]
+
+        operands = self.decoded_instruction["operands"]
+
+
+
+       
+        if opcode in ["ADD","SUB"]:
+
+
+            if len(operands) != 3:
+
+                return False
+
+
+
+            for reg in operands:
+
+
+                if not self.validate_register(reg):
+
+                    print("Invalid Register:",
+                          reg)
+
+                    return False
+
+
+
+        elif opcode == "MOV":
+
+
+            if len(operands) != 2:
+
+                return False
+
+
+
+            for reg in operands:
+
+
+                if not self.validate_register(reg):
+
+                    print("Invalid Register:",
+                          reg)
+
+                    return False
+
+
+
+
+        elif opcode == "LOAD":
+
+
+            if len(operands) != 2:
+
+                return False
+
+
+
+            register = operands[0]
+
+
+            address = operands[1]
+
+
+
+            if not self.validate_register(register):
+
+                print("Invalid Register")
+
+                return False
+
+
+
+            if not address.isdigit():
+
+                return False
+
+
+
+            if not self.validate_memory(
+                    int(address)):
+
+                return False
+
+
+
+
+        elif opcode == "STORE":
+
+
+            if len(operands) != 2:
+
+                return False
+
+
+
+            register = operands[0]
+
+
+            address = operands[1]
+
+
+
+            if not self.validate_register(register):
+
+                return False
+
+
+
+            if not address.isdigit():
+
+                return False
+
+
+
+            if not self.validate_memory(
+                    int(address)):
+
+                return False
+
+
+
+
+        elif opcode == "JMP":
+
+
+            if len(operands) != 1:
+
+                return False
+
+
+
+            if not operands[0].isdigit():
+
+                return False
+
+
+
+     
+        elif opcode == "HALT":
+
+
+            if len(operands) != 0:
+
+                return False
+
+
+
+        return True
+
+    def execute(self):
+
+
+
+        if self.decoded_instruction is None:
+
+            return
+
+
+
+        opcode = self.decoded_instruction["opcode"]
+
+        operands = self.decoded_instruction["operands"]
+
+
+
+        print("\nEXECUTE STAGE")
+        print("----------------")
+
+
+
+        if opcode == "ADD":
+
+
+            destination = operands[0]
+
+            source1 = operands[1]
+
+            source2 = operands[2]
+
+
+
+            self.execution_result = (
+
+                self.registers[source1]
+                +
+                self.registers[source2]
+
+            )
+
+
+            self.destination_register = destination
+
+
+
+            print(
+                f"{destination} = {source1} + {source2}"
+            )
+
+
+        elif opcode == "SUB":
+
+
+            destination = operands[0]
+
+            source1 = operands[1]
+
+            source2 = operands[2]
+
+
+
+            self.execution_result = (
+
+                self.registers[source1]
+                -
+                self.registers[source2]
+
+            )
+
+
+
+            self.destination_register = destination
+
+
+
+            print(
+                f"{destination} = {source1} - {source2}"
+            )
+
+
+
+        elif opcode == "MOV":
+
+
+            destination = operands[0]
+
+            source = operands[1]
+
+
+
+            self.execution_result = (
+
+                self.registers[source]
+
+            )
+
+
+            self.destination_register = destination
+
+
+
+            print(
+                f"{destination} = {source}"
+            )
+
+
+        elif opcode == "LOAD":
+
+
+            self.memory_operation = "LOAD"
+
+
+            self.destination_register = operands[0]
+
+
+            self.memory_address = int(
+                operands[1]
+            )
+
+
+
+            print(
+                "Loading data from memory address",
+                self.memory_address
+            )
+
+
+
+
+        elif opcode == "STORE":
+
+
+            self.memory_operation = "STORE"
+
+
+            self.source_register = operands[0]
+
+
+            self.memory_address = int(
+                operands[1]
+            )
+
+
+
+            print(
+                "Storing data into memory address",
+                self.memory_address
+            )
+
+
+
+
+        elif opcode == "JMP":
+
+
+            jump_address = int(
+                operands[0]
+            )
+
+
+            self.PC = jump_address
+
+
+
+            print(
+                "Jumping to instruction",
+                jump_address
+            )
+
+
+
+
+
+        elif opcode == "HALT":
+
+
+            self.running = False
+
+
+
+            print(
+                "CPU HALTED"
+            )
+
+    def memory_access(self):
+
+   
+
+
+        print("\nMEMORY ACCESS STAGE")
+        print("-------------------")
+
+
+        if hasattr(self, "memory_operation"):
+
+
+            if self.memory_operation == "LOAD":
+
+
+                self.memory_result = (
+
+                    self.memory[
+                        self.memory_address
+                    ]
+
+                )
+
+
+                print(
+                    "Loaded value:",
+                    self.memory_result
+                )
+
+
+
+            elif self.memory_operation == "STORE":
+
+
+                value = (
+
+                    self.registers[
+                        self.source_register
+                    ]
+
+                )
+
+
+                self.memory[
+                    self.memory_address
+                ] = value
+
+
+
+                print(
+                    "Stored value:",
+                    value
+                )
+
+
+
+        else:
+
+
+            print(
+                "No memory operation"
+            )
+
+
+
+
+
+    def write_back(self):
+
+      
+
+
+        print("\nWRITE BACK STAGE")
+        print("-----------------")
+
+
+
+
+        if hasattr(
+            self,
+            "destination_register"
+        ):
+
+
+
+            if self.execution_result is not None:
+
+
+
+                self.registers[
+                    self.destination_register
+                ] = self.execution_result
+
+
+
+                print(
+                    self.destination_register,
+                    "updated to",
+                    self.execution_result
+                )
+
+
+
+        if hasattr(
+            self,
+            "memory_operation"
+        ):
+
+
+
+            if self.memory_operation == "LOAD":
+
+
+
+                self.registers[
+                    self.destination_register
+                ] = self.memory_result
+
+
+
+                print(
+                    self.destination_register,
+                    "loaded with",
+                    self.memory_result
+                )
+
+
+
+
+        self.execution_result = None
+
+        self.memory_result = None
+
+
+
+        if hasattr(
+            self,
+            "memory_operation"
+        ):
+
+            del self.memory_operation
+
+
+    def run_cycle(self):
+
+       
+
+
+        print("\n\n================================")
+        print(
+            "CPU CYCLE",
+            self.cycles + 1
+        )
+        print("================================")
+
+
+
+        self.fetch()
+
+
+
+        if self.IR is None:
+
+            return
+
+
+
+        self.decode()
+
+
+
+        if not self.validate_instruction():
+
+            print(
+                "Skipping invalid instruction"
+            )
+
+            return
+
+
+
+        if not self.validate_operands():
+
+            print(
+                "Invalid operands"
+            )
+
+            return
+
+
+
+        self.execute()
+
+
+
+        self.memory_access()
+
+
+
+        self.write_back()
+
+
+
+        self.cycles += 1
+
+    def run(self):
+
+       
+
+        print(
+            "\nStarting CPU Execution..."
+        )
+
+
+
+        while self.running:
+
+
+            self.run_cycle()
+
+
+
+        print(
+            "\nCPU Execution Completed"
+        )
+
+
+
+        print(
+            "Total Cycles:",
+            self.cycles
+        )
+
+
+def get_user_program():
+
+
+
+
+    instructions = []
+
+
+    print("\n===================================")
+    print(" ENTER CPU PROGRAM INSTRUCTIONS ")
+    print("===================================")
+
+    print("\nAvailable Instructions:")
+    print("LOAD R1 address")
+    print("STORE R1 address")
+    print("ADD R1 R2 R3")
+    print("SUB R1 R2 R3")
+    print("MOV R1 R2")
+    print("JMP address")
+    print("HALT")
+
+
+    print("\nType HALT to finish program input\n")
+
+
+
+    while True:
+
+
+        instruction = input(
+            "Instruction : "
+        ).upper()
+
+
+
+        instructions.append(
+            instruction
+        )
+
+
+
+        if instruction == "HALT":
+
+            break
+
+
+
+    return instructions
+
+
+
+def initialize_memory(cpu):
+
+   
+
+    cpu.memory[10] = 25
+
+    cpu.memory[20] = 15
+
+    cpu.memory[30] = 50
+
+
+
+    print("\nSample Memory Initialized")
+
+    print("Memory[10] =", cpu.memory[10])
+
+    print("Memory[20] =", cpu.memory[20])
+
+    print("Memory[30] =", cpu.memory[30])
+
+def sample_program():
+
+    
+
+
+    program = [
+
+        "LOAD R1 10",
+
+        "LOAD R2 20",
+
+        "ADD R3 R1 R2",
+
+        "MOV R4 R3",
+
+        "STORE R4 50",
+
+        "HALT"
+
+    ]
+
+
+    return program
+
+
+
+
+def main():
+
+
+    print("\n")
+    print("======================================")
+    print("       CPU SIMULATOR PROGRAM")
+    print("======================================")
+
+
+
+    cpu = CPU()
+
+
+
+    initialize_memory(cpu)
+
+
+
+    choice = input(
+        "\nEnter 1 for User Program\n"
+        "Enter 2 for Sample Program\n"
+        "Choice : "
+    )
+
+
+
+    if choice == "1":
+
+
+        instructions = get_user_program()
+
+
+
+    else:
+
+
+        instructions = sample_program()
+
+
+        print(
+            "\nSample Program Loaded"
+        )
+
+
+
+    cpu.load_program(
+        instructions
+    )
+
+
+
+    cpu.show_program()
+
+
+
+    cpu.display_registers()
+
+
+
+    cpu.run()
+
+
+
+    print("\n========== FINAL CPU STATE ==========")
+
+
+
+    cpu.display_registers()
+
+
+
+    cpu.display_memory()
+
+
+
+    print(
+        "\nProgram executed successfully!"
+    )
+
+
+if __name__ == "__main__":
+
+
+    main()
+
